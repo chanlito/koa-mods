@@ -1,0 +1,19 @@
+# dependencies
+/node_modules
+
+# IDE
+/.idea
+
+# misc
+.DS_Store
+npm-debug.log
+
+# environment variables
+/.env
+
+# tests
+/coverage
+/.nyc_output
+
+# dist
+dist

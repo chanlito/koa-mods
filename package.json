@@ -1,0 +1,41 @@
+{
+  "name": "koa-mods",
+  "version": "0.1.0",
+  "description": "Add Mods to your Koa Framework built with Typescript.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "koa",
+    "mods",
+    "typescript"
+  ],
+  "author": "Bruce Hem",
+  "license": "MIT",
+  "bugs": {
+    "url": ""
+  },
+  "homepage": "",
+  "devDependencies": {
+    "@types/koa": "^2.0.39",
+    "@types/koa-router": "^7.0.22",
+    "@types/node": "^8.0.24",
+    "@types/reflect-metadata": "0.0.5",
+    "koa": "^2.3.0",
+    "koa-bodyparser": "^4.2.0",
+    "koa-router": "^7.2.1",
+    "tslint": "^4.4.2",
+    "tslint-config-swimlane": "^2.0.1",
+    "typescript": "^2.1.6"
+  },
+  "dependencies": {
+    "indicative": "^3.0.0",
+    "reflect-metadata": "^0.1.10"
+  }
+}
