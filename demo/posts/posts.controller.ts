@@ -1,24 +1,16 @@
-import { Body, Controller, Get, Param, Params, Patch, Post, QueryParam, QueryParams, Route, Use } from '../src';
+import { Body, Controller, Get, Param, Patch, Post, QueryParam, QueryParams, Route, Use } from '../../src';
 import { CreatePostDto, CreatePostDtoQuery } from './posts.dto';
-
-const middleware1 = async (ctx: any, next: any) => {
-  console.log('MID 1');
-  await next();
-};
-
-const middleware2 = async (ctx: any, next: any) => {
-  console.log('MID 2');
-  await next();
-};
+import { sleepMiddleware, sleepMiddlewareAlt } from './posts.middleware';
 
 @Controller('posts')
-export // @Use(sleepMiddleware, sleepMiddlewareAlt)
-class PostController {
+@Use(sleepMiddleware)
+export class PostController {
   @Route('GET')
   async fetchPosts(
     @QueryParam('order') order: string,
     @QueryParam('limit') limit: number,
-    @QueryParam('offset') offset: number
+    @QueryParam('offset') offset: number,
+    @QueryParams() query: CreatePostDtoQuery
   ) {
     return [
       {
@@ -71,11 +63,6 @@ class PostController {
   }
 
   @Post()
-  @Use(middleware1, middleware2)
-  async createPost(
-    @Params() params: CreatePostDto,
-    @Body() body: CreatePostDto,
-    @Body() body2: CreatePostDto,
-    @QueryParams() query: CreatePostDtoQuery
-  ) {}
+  @Use(sleepMiddleware, sleepMiddlewareAlt)
+  async createPost(@Body() body: CreatePostDto) {}
 }

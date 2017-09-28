@@ -23,14 +23,9 @@ function getArguments(params: any[], ctx: any, next: () => Promise<any>): any[] 
 
   if (params) {
     args = [];
-
-    // sort by index
     params.sort((a, b) => a.index - b.index);
-
     for (const param of params) {
-      let result;
-      if (param !== undefined) result = param.fn(ctx);
-      args.push(result);
+      if (param) args.push(param.fn(ctx));
     }
   }
 

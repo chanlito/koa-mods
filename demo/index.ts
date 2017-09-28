@@ -5,7 +5,7 @@ import * as bodyparser from 'koa-bodyparser';
 import * as Router from 'koa-router';
 
 import { bindControllers } from '../src';
-import { PostController } from './posts.controller';
+import { PostController } from './posts/posts.controller';
 import { UsersController } from './users.controller';
 
 const app = new Koa();
@@ -15,6 +15,8 @@ const router = new Router();
 app.use(async (ctx, next) => {
   await next().catch(error => {
     console.error(error);
+    ctx.status = 422;
+    ctx.body = error;
   });
 });
 app.use(bodyparser());

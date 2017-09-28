@@ -1,4 +1,4 @@
-import { Validate } from '../src';
+import { Validate } from '../../src';
 
 @Validate({
   rules: {

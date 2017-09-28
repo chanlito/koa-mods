@@ -1,7 +1,14 @@
 import { validateAll } from 'indicative';
 
 import { RouteDefinition, ValidateOptions } from '../';
-import { ACTION_TYPES, METADATA_MIDDLEWARES, METADATA_PARAMS, METADATA_ROUTES, METADATA_RULES } from '../';
+import {
+  ACTION_TYPES,
+  METADATA_MIDDLEWARES,
+  METADATA_MIDDLEWARES_VALIDATION,
+  METADATA_PARAMS,
+  METADATA_ROUTES,
+  METADATA_RULES,
+} from '../';
 
 export function Controller(path: string = ''): ClassDecorator {
   if (path.charAt(0) !== '/') path = `/${path}`;
@@ -16,12 +23,13 @@ export function Controller(path: string = ''): ClassDecorator {
       const { method, name } = route as { method: string; path: string; name: string };
 
       const fnMws = Reflect.getMetadata(`${METADATA_MIDDLEWARES}_${name}`, targetPrototype) || [];
+      const fnValMws = Reflect.getMetadata(`${METADATA_MIDDLEWARES_VALIDATION}_${name}`, targetPrototype) || [];
       const params = Reflect.getMetadata(`${METADATA_PARAMS}_${name}`, targetPrototype) || [];
 
       routes.push({
         method,
         url: path + route.path,
-        middleware: [ ...middlewares, ...fnMws ],
+        middleware: [ ...middlewares, ...fnMws, ...fnValMws.reverse() ],
         name: route.name,
         params
       });
@@ -35,7 +43,7 @@ export function Use(...middlewares: ((ctx: any, next: any) => Promise<any>)[]): 
   return (target: any, name: string) => {
     if (name) {
       let fnMws = Reflect.getMetadata(`${METADATA_MIDDLEWARES}_${name}`, target) || [];
-      fnMws = [ ...middlewares, ...fnMws.reverse() ];
+      fnMws = [ ...middlewares, ...fnMws ];
       Reflect.defineMetadata(`${METADATA_MIDDLEWARES}_${name}`, fnMws, target);
     } else {
       Reflect.defineMetadata(METADATA_MIDDLEWARES, middlewares, target);
@@ -113,9 +121,9 @@ export function Body() {
     const validationOptions: ValidateOptions = Reflect.getMetadata(METADATA_RULES, pt);
     if (validationOptions) {
       const valMw = createValidationMiddleware(validationOptions, 'body');
-      let middlewares = Reflect.getMetadata(`${METADATA_MIDDLEWARES}_${name}`, target) || [];
+      let middlewares = Reflect.getMetadata(`${METADATA_MIDDLEWARES_VALIDATION}_${name}`, target) || [];
       middlewares = [ ...middlewares, valMw ];
-      Reflect.defineMetadata(`${METADATA_MIDDLEWARES}${name ? `_${name}` : ''}`, middlewares, target);
+      Reflect.defineMetadata(`${METADATA_MIDDLEWARES_VALIDATION}${name ? `_${name}` : ''}`, middlewares, target);
     }
 
     const meta = Reflect.getMetadata(`${METADATA_PARAMS}_${name}`, target) || [];
@@ -163,9 +171,9 @@ export function QueryParams() {
     const validationOptions: ValidateOptions = Reflect.getMetadata(METADATA_RULES, pt);
     if (validationOptions) {
       const valMw = createValidationMiddleware(validationOptions, 'query');
-      let middlewares = Reflect.getMetadata(`${METADATA_MIDDLEWARES}_${name}`, target) || [];
+      let middlewares = Reflect.getMetadata(`${METADATA_MIDDLEWARES_VALIDATION}_${name}`, target) || [];
       middlewares = [ ...middlewares, valMw ];
-      Reflect.defineMetadata(`${METADATA_MIDDLEWARES}${name ? `_${name}` : ''}`, middlewares, target);
+      Reflect.defineMetadata(`${METADATA_MIDDLEWARES_VALIDATION}${name ? `_${name}` : ''}`, middlewares, target);
     }
 
     const meta = Reflect.getMetadata(`${METADATA_PARAMS}_${name}`, target) || [];
@@ -202,9 +210,9 @@ export function Params(): ParameterDecorator {
     const validationOptions: ValidateOptions = Reflect.getMetadata(METADATA_RULES, pt);
     if (validationOptions) {
       const valMw = createValidationMiddleware(validationOptions, 'params');
-      let middlewares = Reflect.getMetadata(`${METADATA_MIDDLEWARES}_${name}`, target) || [];
+      let middlewares = Reflect.getMetadata(`${METADATA_MIDDLEWARES_VALIDATION}_${name}`, target) || [];
       middlewares = [ ...middlewares, valMw ];
-      Reflect.defineMetadata(`${METADATA_MIDDLEWARES}${name ? `_${name}` : ''}`, middlewares, target);
+      Reflect.defineMetadata(`${METADATA_MIDDLEWARES_VALIDATION}${name ? `_${name}` : ''}`, middlewares, target);
     }
 
     const meta = Reflect.getMetadata(`${METADATA_PARAMS}_${name}`, target) || [];
@@ -220,7 +228,7 @@ export function Validate(options: ValidateOptions): ClassDecorator {
 }
 
 function createValidationMiddleware(validationOptions, type: 'body' | 'params' | 'query') {
-  const valMw = async (ctx: any, next: () => Promise<any>): Promise<any> => {
+  return async (ctx: any, next: () => Promise<any>): Promise<any> => {
     try {
       let data = {};
 
@@ -235,7 +243,7 @@ function createValidationMiddleware(validationOptions, type: 'body' | 'params' |
       }
 
       await validateAll(data, validationOptions.rules, validationOptions.messages);
-      await next();
+      return next();
     } catch (errors) {
       const e: any = new Error();
       e.name = 'KoaModsValidationError';
@@ -244,5 +252,4 @@ function createValidationMiddleware(validationOptions, type: 'body' | 'params' |
       throw e;
     }
   };
-  return valMw;
 }
