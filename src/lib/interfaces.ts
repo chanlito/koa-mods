@@ -4,7 +4,7 @@ export interface KoaModsOptions {
   app: Koa;
   controllers: any[];
   enableCors?: boolean;
-  authorizationChecker: AuthorizationCheckerFn;
+  authorizationChecker?: AuthorizationCheckerFn;
 }
 
 export interface RouteDefinition {
