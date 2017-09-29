@@ -1,6 +1,6 @@
 {
   "name": "koa-mods",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Add Mods to your Koa Framework built with Typescript.",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
