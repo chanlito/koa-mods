@@ -1,6 +1,6 @@
 {
   "name": "koa-mods",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Add Mods to your Koa Framework built with Typescript.",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -11,7 +11,11 @@
     "type": "git",
     "url": ""
   },
-  "keywords": [ "koa", "mods", "typescript" ],
+  "keywords": [
+    "koa",
+    "mods",
+    "typescript"
+  ],
   "author": "Bruce Hem",
   "license": "MIT",
   "bugs": {
