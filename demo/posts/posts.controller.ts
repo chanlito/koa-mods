@@ -1,4 +1,17 @@
-import { Body, Controller, Get, Param, Patch, Post, QueryParam, QueryParams, Route, Use } from '../../src';
+import {
+  Auth,
+  AuthUser,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  QueryParam,
+  QueryParams,
+  Route,
+  Use,
+} from '../../src';
 import { CreatePostDto, CreatePostDtoQuery } from './posts.dto';
 import { sleepMiddleware, sleepMiddlewareAlt } from './posts.middleware';
 
@@ -63,6 +76,10 @@ export class PostController {
   }
 
   @Post()
+  @Auth()
+  // @AuthOpt('ADMIN', 'USER')
   @Use(sleepMiddleware, sleepMiddlewareAlt)
-  async createPost(@Body() body: CreatePostDto) {}
+  async createPost(@Body() body: CreatePostDto, @AuthUser() authUser: any) {
+    return authUser;
+  }
 }

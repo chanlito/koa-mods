@@ -1,3 +1,12 @@
+import * as Koa from 'koa';
+
+export interface KoaModsOptions {
+  app: Koa;
+  controllers: any[];
+  authCheckerFn?: (ctx: any) => Promise<{ success: boolean; user: any }>;
+  roleCheckerFn?: (ctx: any) => Promise<{ availableRoles: string[] }>;
+}
+
 export interface RouteDefinition {
   method: string;
   url: string;

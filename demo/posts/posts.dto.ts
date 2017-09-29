@@ -7,7 +7,7 @@ import { Validate } from '../../src';
     date: 'required',
     album: 'required|object',
     'album.title': 'required',
-    'album.author': 'required'
+    'album.author': 'required|string'
   },
   messages: {
     'title.required': 'What the faq bro?'

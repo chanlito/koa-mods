@@ -3,12 +3,13 @@ import { validateAll } from 'indicative';
 import { RouteDefinition, ValidateOptions } from '../';
 import {
   ACTION_TYPES,
+  METADATA_AUTHENTICATION,
   METADATA_MIDDLEWARES,
   METADATA_MIDDLEWARES_VALIDATION,
   METADATA_PARAMS,
   METADATA_ROUTES,
   METADATA_RULES,
-} from '../';
+} from '../lib/constants';
 
 export function Controller(path: string = ''): ClassDecorator {
   if (path.charAt(0) !== '/') path = `/${path}`;
@@ -225,6 +226,22 @@ export function Validate(options: ValidateOptions): ClassDecorator {
   return (target: any) => {
     Reflect.defineMetadata(METADATA_RULES, options, target);
   };
+}
+
+export function Auth(...roles: string[]): MethodDecorator {
+  return (target: any, propertyKey: string) => {
+    Reflect.defineMetadata(METADATA_AUTHENTICATION, { type: 'required', roles }, target, propertyKey);
+  };
+}
+
+export function AuthOpt(...roles: string[]): MethodDecorator {
+  return (target: any, propertyKey: string) => {
+    Reflect.defineMetadata(METADATA_AUTHENTICATION, { type: 'optional', roles }, target, propertyKey);
+  };
+}
+
+export function AuthUser() {
+  return Inject((ctx: any) => ctx.state.authUser);
 }
 
 function createValidationMiddleware(validationOptions, type: 'body' | 'params' | 'query') {
