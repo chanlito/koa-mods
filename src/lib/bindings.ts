@@ -7,7 +7,7 @@ import { KoaModsOptions } from '../';
 import { METADATA_AUTHENTICATION, METADATA_ROUTES } from './constants';
 
 export function useKoaMods(options: KoaModsOptions): any {
-  const { app, controllers, authCheckerFn, roleCheckerFn, enableCors } = options;
+  const { app, controllers, enableCors, authorizationChecker } = options;
 
   if (enableCors) app.use(cors());
   app.use(bodyparser());
@@ -26,52 +26,12 @@ export function useKoaMods(options: KoaModsOptions): any {
         name
       );
 
-      let am;
-      let rm;
-
-      if (authCheckerFn && authFnMws && authFnMws.type === 'required') {
-        am = async (ctx: any, next: () => Promise<any>) => {
-          const authResult = await authCheckerFn(ctx);
-
-          if (authResult.success) {
-            ctx.state.authUser = authResult.user;
-            return next();
-          }
-
-          ctx.status = 401;
-          ctx.body = {
-            message: 'Unauthenticated'
-          };
-        };
-      } else if (authCheckerFn && authFnMws && authFnMws.type === 'optional') {
-        am = async (ctx: Koa.Context, next: () => Promise<any>) => {
-          const authResult = await authCheckerFn(ctx);
-          if (authResult.success) ctx.state.authUser = authResult.user;
+      if (authorizationChecker && authFnMws) {
+        const am = async (ctx: Koa.Context, next: () => Promise<any>) => {
+          ctx.state.authUser = await authorizationChecker(ctx, authFnMws);
           return next();
         };
-      }
-
-      if (roleCheckerFn && authFnMws && authFnMws.roles && authFnMws.roles.length) {
-        rm = async (ctx: Koa.Context, next: () => Promise<any>) => {
-          if (ctx.state.authUser) {
-            const roleCheckResult = await roleCheckerFn(ctx);
-            const foundAvailRole = roleCheckResult.availableRoles.some(r => authFnMws.roles.indexOf(r) >= 0);
-            const foundUserRole = authFnMws.roles.some(r => ctx.state.authUser.role === r);
-            if (foundAvailRole && foundUserRole) {
-              return next();
-            } else {
-              ctx.status = 403;
-              ctx.body = {
-                message: 'Unauthorized'
-              };
-            }
-          } else {
-            return next();
-          }
-        };
-        if (am && rm) middleware = [ am, rm, ...middleware ];
-      } else {
-        if (am) middleware = [ am, ...middleware ];
+        middleware = [ am, ...middleware ];
       }
 
       router[method](url, ...middleware, async function(ctx: Koa.Context, next: () => Promise<any>) {
