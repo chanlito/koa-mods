@@ -5,6 +5,7 @@ export interface KoaModsOptions {
   controllers: any[];
   authCheckerFn?: (ctx: any) => Promise<{ success: boolean; user: any }>;
   roleCheckerFn?: (ctx: any) => Promise<{ availableRoles: string[] }>;
+  enableCors?: boolean;
 }
 
 export interface RouteDefinition {

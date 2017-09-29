@@ -1,11 +1,16 @@
+import * as cors from 'kcors';
 import * as Koa from 'koa';
+import * as bodyparser from 'koa-bodyparser';
 import * as Router from 'koa-router';
 
 import { KoaModsOptions } from '../';
 import { METADATA_AUTHENTICATION, METADATA_ROUTES } from './constants';
 
 export function useKoaMods(options: KoaModsOptions): any {
-  const { app, controllers, authCheckerFn, roleCheckerFn } = options;
+  const { app, controllers, authCheckerFn, roleCheckerFn, enableCors } = options;
+
+  if (enableCors) app.use(cors());
+  app.use(bodyparser());
 
   const router = new Router();
 

@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 
 import * as Koa from 'koa';
-import * as bodyparser from 'koa-bodyparser';
 
 import { useKoaMods } from '../src';
 import { PostController } from './posts/posts.controller';
@@ -23,7 +22,6 @@ app.use(async (ctx, next) => {
     }
   });
 });
-app.use(bodyparser());
 
 useKoaMods({
   app,
