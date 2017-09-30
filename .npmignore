@@ -1,6 +1,8 @@
-.tsconfig.json
 .gitignore
-.vscode/**
-node_modules/**
-src/**
-demo/**
+.tsconfig.json
+.tslint.json
+.vscode
+
+node_modules
+src
+demo

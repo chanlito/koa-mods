@@ -14,6 +14,6 @@
     "target": "es6",
     "declaration": true
   },
-  "include": [ "src", "demo" ],
+  "include": [ "src" ],
   "exclude": [ "dist", "node_modules" ]
 }

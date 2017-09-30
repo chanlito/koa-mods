@@ -1,27 +1,34 @@
-import * as cors from 'kcors';
+import * as debug from 'debug';
 import * as Koa from 'koa';
 import * as bodyparser from 'koa-bodyparser';
 import * as Router from 'koa-router';
 
 import { KoaModsOptions } from '../';
-import { METADATA_AUTHENTICATION, METADATA_ROUTES } from './constants';
+import { AUTH_META_KEY, ROUTES_META_KEY } from './constants';
 
 export function useKoaMods(options: KoaModsOptions): any {
-  const { app, controllers, enableCors, authorizationChecker } = options;
+  const log = debug('koa-mods');
+  const { app, controllers, authorizationChecker, customValidateOptions } = options;
 
-  if (enableCors) app.use(cors());
   app.use(bodyparser());
 
   const router = new Router();
 
   for (const ctrl of controllers) {
-    const routes = Reflect.getMetadata(METADATA_ROUTES, ctrl);
+    const customValMw = async (ctx: any, next: () => Promise<any>) => {
+      ctx.koaModsCustomValidationOptions = customValidateOptions;
+      return next();
+    };
+
+    const routes = Reflect.getMetadata(ROUTES_META_KEY, ctrl);
     for (const route of routes) {
       const { method, url, name, params } = route;
       let { middleware } = route;
 
+      middleware = [ customValMw, ...middleware ];
+
       const authFnMws: { type: 'required' | 'optional'; roles: string[] } | undefined = Reflect.getMetadata(
-        METADATA_AUTHENTICATION,
+        AUTH_META_KEY,
         ctrl.prototype,
         name
       );
@@ -34,6 +41,7 @@ export function useKoaMods(options: KoaModsOptions): any {
         middleware = [ am, ...middleware ];
       }
 
+      log('routes:', (method as string).toUpperCase(), url, '-->', name);
       router[method](url, ...middleware, async function(ctx: Koa.Context, next: () => Promise<any>) {
         const inst = new ctrl();
         const args = getArguments(params, ctx, next);

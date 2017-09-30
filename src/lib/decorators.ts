@@ -1,31 +1,33 @@
-import { validateAll } from 'indicative';
+import { extend, Messages, validateAll } from 'indicative';
+import { Context } from 'koa';
 
 import { RouteDefinition, ValidateOptions } from '../';
 import {
   ACTION_TYPES,
-  METADATA_AUTHENTICATION,
-  METADATA_MIDDLEWARES,
-  METADATA_MIDDLEWARES_VALIDATION,
-  METADATA_PARAMS,
-  METADATA_ROUTES,
-  METADATA_RULES,
+  AUTH_META_KEY,
+  MWS_META_KEY,
+  MWS_VAL_META_KEY,
+  PARAMS_META_KEY,
+  ROUTES_META_KEY,
+  VALIDATION_META_KEY,
 } from '../lib/constants';
+import { CustomValidateOptions } from './interfaces';
 
 export function Controller(path: string = ''): ClassDecorator {
   if (path.charAt(0) !== '/') path = `/${path}`;
 
   return target => {
     const targetPrototype = target.prototype;
-    const middlewares = Reflect.getMetadata(METADATA_MIDDLEWARES, target) || [];
-    const routeDefinitions = Reflect.getMetadata(METADATA_ROUTES, targetPrototype) || [];
+    const middlewares = Reflect.getMetadata(MWS_META_KEY, target) || [];
+    const routeDefinitions = Reflect.getMetadata(ROUTES_META_KEY, targetPrototype) || [];
     const routes: RouteDefinition[] = [];
 
     for (const route of routeDefinitions) {
       const { method, name } = route as { method: string; path: string; name: string };
 
-      const fnMws = Reflect.getMetadata(`${METADATA_MIDDLEWARES}_${name}`, targetPrototype) || [];
-      const fnValMws = Reflect.getMetadata(`${METADATA_MIDDLEWARES_VALIDATION}_${name}`, targetPrototype) || [];
-      const params = Reflect.getMetadata(`${METADATA_PARAMS}_${name}`, targetPrototype) || [];
+      const fnMws = Reflect.getMetadata(`${MWS_META_KEY}_${name}`, targetPrototype) || [];
+      const fnValMws = Reflect.getMetadata(`${MWS_VAL_META_KEY}_${name}`, targetPrototype) || [];
+      const params = Reflect.getMetadata(`${PARAMS_META_KEY}_${name}`, targetPrototype) || [];
 
       routes.push({
         method,
@@ -36,18 +38,18 @@ export function Controller(path: string = ''): ClassDecorator {
       });
     }
 
-    Reflect.defineMetadata(METADATA_ROUTES, routes, target);
+    Reflect.defineMetadata(ROUTES_META_KEY, routes, target);
   };
 }
 
-export function Use(...middlewares: ((ctx: any, next: any) => Promise<any>)[]): Function {
+export function Use(...middlewares: ((ctx: Context, next: any) => Promise<any>)[]): Function {
   return (target: any, name: string) => {
     if (name) {
-      let fnMws = Reflect.getMetadata(`${METADATA_MIDDLEWARES}_${name}`, target) || [];
+      let fnMws = Reflect.getMetadata(`${MWS_META_KEY}_${name}`, target) || [];
       fnMws = [ ...middlewares, ...fnMws ];
-      Reflect.defineMetadata(`${METADATA_MIDDLEWARES}_${name}`, fnMws, target);
+      Reflect.defineMetadata(`${MWS_META_KEY}_${name}`, fnMws, target);
     } else {
-      Reflect.defineMetadata(METADATA_MIDDLEWARES, middlewares, target);
+      Reflect.defineMetadata(MWS_META_KEY, middlewares, target);
     }
   };
 }
@@ -60,9 +62,9 @@ export function Route(method: string, path: string = ''): MethodDecorator {
   }
 
   return (target: any, name: string) => {
-    const meta = Reflect.getMetadata(METADATA_ROUTES, target) || [];
-    meta.push({ method: methodLowercased, path, name });
-    Reflect.defineMetadata(METADATA_ROUTES, meta, target);
+    const meta = Reflect.getMetadata(ROUTES_META_KEY, target) || [];
+    meta.push({ method: methodLowercased, path: path.charAt(0) !== '/' ? `/${path}` : path, name });
+    Reflect.defineMetadata(ROUTES_META_KEY, meta, target);
   };
 }
 
@@ -88,48 +90,54 @@ export function Delete(path?: string) {
 
 export function Inject(fn: any) {
   return function(target: any, name: string, index: number) {
-    const meta = Reflect.getMetadata(`${METADATA_PARAMS}_${name}`, target) || [];
+    const meta = Reflect.getMetadata(`${PARAMS_META_KEY}_${name}`, target) || [];
     meta.push({ index, name, fn });
-    Reflect.defineMetadata(`${METADATA_PARAMS}_${name}`, meta, target);
+    Reflect.defineMetadata(`${PARAMS_META_KEY}_${name}`, meta, target);
   };
 }
 
 export function Ctx() {
-  return Inject((ctx: any) => ctx);
+  return Inject((ctx: Context) => ctx);
 }
 
 export function Req() {
-  return Inject((ctx: any) => ctx.req);
+  return Inject((ctx: Context) => ctx.req);
 }
 
 export function Request() {
-  return Inject((ctx: any) => ctx.request);
+  return Inject((ctx: Context) => ctx.request);
 }
 
 export function Res() {
-  return Inject((ctx: any) => ctx.res);
+  return Inject((ctx: Context) => ctx.res);
 }
 
 export function Response() {
-  return Inject((ctx: any) => ctx.response);
+  return Inject((ctx: Context) => ctx.response);
 }
 
-export function Body() {
+export function State(prop?: string) {
+  return Inject((ctx: Context) => {
+    return prop ? ctx.state[prop] : ctx.state;
+  });
+}
+
+export function Body(): ParameterDecorator {
   return (target: any, name: string, index: number) => {
     const paramTypes = Reflect.getMetadata('design:paramtypes', target, name);
     const pt = paramTypes[index];
 
-    const validationOptions: ValidateOptions = Reflect.getMetadata(METADATA_RULES, pt);
-    if (validationOptions) {
-      const valMw = createValidationMiddleware(validationOptions, 'body');
-      let middlewares = Reflect.getMetadata(`${METADATA_MIDDLEWARES_VALIDATION}_${name}`, target) || [];
+    const validateOptions: ValidateOptions | undefined = Reflect.getMetadata(VALIDATION_META_KEY, pt);
+    if (validateOptions) {
+      const valMw = createValidationMiddleware(validateOptions, 'body');
+      let middlewares = Reflect.getMetadata(`${MWS_VAL_META_KEY}_${name}`, target) || [];
       middlewares = [ ...middlewares, valMw ];
-      Reflect.defineMetadata(`${METADATA_MIDDLEWARES_VALIDATION}${name ? `_${name}` : ''}`, middlewares, target);
+      Reflect.defineMetadata(`${MWS_VAL_META_KEY}${name ? `_${name}` : ''}`, middlewares, target);
     }
 
-    const meta = Reflect.getMetadata(`${METADATA_PARAMS}_${name}`, target) || [];
-    meta.push({ index, name, fn: (ctx: any) => ctx.request.body });
-    Reflect.defineMetadata(`${METADATA_PARAMS}_${name}`, meta, target);
+    const meta = Reflect.getMetadata(`${PARAMS_META_KEY}_${name}`, target) || [];
+    meta.push({ index, name, fn: (ctx: Context) => ctx.request.body });
+    Reflect.defineMetadata(`${PARAMS_META_KEY}_${name}`, meta, target);
   };
 }
 
@@ -149,9 +157,9 @@ export function QueryParam(prop: string) {
     const paramTypes = Reflect.getMetadata('design:paramtypes', target, name);
     const paramType = paramTypes[index].name;
 
-    const meta = Reflect.getMetadata(`${METADATA_PARAMS}_${name}`, target) || [];
+    const meta = Reflect.getMetadata(`${PARAMS_META_KEY}_${name}`, target) || [];
 
-    const fn = (ctx: any) => {
+    const fn = (ctx: Context) => {
       if (paramType === 'Number') {
         return ctx.query[prop] ? +ctx.query[prop] : ctx.query[prop];
       } else {
@@ -160,26 +168,26 @@ export function QueryParam(prop: string) {
     };
 
     meta.push({ index, name, fn });
-    Reflect.defineMetadata(`${METADATA_PARAMS}_${name}`, meta, target);
+    Reflect.defineMetadata(`${PARAMS_META_KEY}_${name}`, meta, target);
   };
 }
 
-export function QueryParams() {
+export function QueryParams(): ParameterDecorator {
   return (target: any, name: string, index: number) => {
     const paramTypes = Reflect.getMetadata('design:paramtypes', target, name);
     const pt = paramTypes[index];
 
-    const validationOptions: ValidateOptions = Reflect.getMetadata(METADATA_RULES, pt);
-    if (validationOptions) {
-      const valMw = createValidationMiddleware(validationOptions, 'query');
-      let middlewares = Reflect.getMetadata(`${METADATA_MIDDLEWARES_VALIDATION}_${name}`, target) || [];
+    const validateOptions: ValidateOptions | undefined = Reflect.getMetadata(VALIDATION_META_KEY, pt);
+    if (validateOptions) {
+      const valMw = createValidationMiddleware(validateOptions, 'query');
+      let middlewares = Reflect.getMetadata(`${MWS_VAL_META_KEY}_${name}`, target) || [];
       middlewares = [ ...middlewares, valMw ];
-      Reflect.defineMetadata(`${METADATA_MIDDLEWARES_VALIDATION}${name ? `_${name}` : ''}`, middlewares, target);
+      Reflect.defineMetadata(`${MWS_VAL_META_KEY}${name ? `_${name}` : ''}`, middlewares, target);
     }
 
-    const meta = Reflect.getMetadata(`${METADATA_PARAMS}_${name}`, target) || [];
-    meta.push({ index, name, fn: (ctx: any) => ctx.query });
-    Reflect.defineMetadata(`${METADATA_PARAMS}_${name}`, meta, target);
+    const meta = Reflect.getMetadata(`${PARAMS_META_KEY}_${name}`, target) || [];
+    meta.push({ index, name, fn: (ctx: Context) => ctx.query });
+    Reflect.defineMetadata(`${PARAMS_META_KEY}_${name}`, meta, target);
   };
 }
 
@@ -188,9 +196,9 @@ export function Param(prop: string): ParameterDecorator {
     const paramTypes = Reflect.getMetadata('design:paramtypes', target, name);
     const paramType = paramTypes[index].name;
 
-    const meta = Reflect.getMetadata(`${METADATA_PARAMS}_${name}`, target) || [];
+    const meta = Reflect.getMetadata(`${PARAMS_META_KEY}_${name}`, target) || [];
 
-    const fn = (ctx: any) => {
+    const fn = (ctx: Context) => {
       if (paramType === 'Number') {
         return ctx.params[prop] ? +ctx.params[prop] : ctx.params[prop];
       } else {
@@ -199,7 +207,7 @@ export function Param(prop: string): ParameterDecorator {
     };
 
     meta.push({ index, name, fn });
-    Reflect.defineMetadata(`${METADATA_PARAMS}_${name}`, meta, target);
+    Reflect.defineMetadata(`${PARAMS_META_KEY}_${name}`, meta, target);
   };
 }
 
@@ -208,58 +216,78 @@ export function Params(): ParameterDecorator {
     const paramTypes = Reflect.getMetadata('design:paramtypes', target, name);
     const pt = paramTypes[index];
 
-    const validationOptions: ValidateOptions = Reflect.getMetadata(METADATA_RULES, pt);
-    if (validationOptions) {
-      const valMw = createValidationMiddleware(validationOptions, 'params');
-      let middlewares = Reflect.getMetadata(`${METADATA_MIDDLEWARES_VALIDATION}_${name}`, target) || [];
+    const validateOptions: ValidateOptions | undefined = Reflect.getMetadata(VALIDATION_META_KEY, pt);
+    if (validateOptions) {
+      const valMw = createValidationMiddleware(validateOptions, 'params');
+      let middlewares = Reflect.getMetadata(`${MWS_VAL_META_KEY}_${name}`, target) || [];
       middlewares = [ ...middlewares, valMw ];
-      Reflect.defineMetadata(`${METADATA_MIDDLEWARES_VALIDATION}${name ? `_${name}` : ''}`, middlewares, target);
+      Reflect.defineMetadata(`${MWS_VAL_META_KEY}${name ? `_${name}` : ''}`, middlewares, target);
     }
 
-    const meta = Reflect.getMetadata(`${METADATA_PARAMS}_${name}`, target) || [];
-    meta.push({ index, name, fn: (ctx: any) => ctx.params });
-    Reflect.defineMetadata(`${METADATA_PARAMS}_${name}`, meta, target);
+    const meta = Reflect.getMetadata(`${PARAMS_META_KEY}_${name}`, target) || [];
+    meta.push({ index, name, fn: (ctx: Context) => ctx.params });
+    Reflect.defineMetadata(`${PARAMS_META_KEY}_${name}`, meta, target);
   };
 }
 
 export function Validate(options: ValidateOptions): ClassDecorator {
   return (target: any) => {
-    Reflect.defineMetadata(METADATA_RULES, options, target);
+    Reflect.defineMetadata(VALIDATION_META_KEY, options, target);
   };
 }
 
 export function Auth(...roles: string[]): MethodDecorator {
   return (target: any, propertyKey: string) => {
-    Reflect.defineMetadata(METADATA_AUTHENTICATION, { type: 'required', roles }, target, propertyKey);
+    Reflect.defineMetadata(AUTH_META_KEY, { type: 'required', roles }, target, propertyKey);
   };
 }
 
 export function AuthOpt(...roles: string[]): MethodDecorator {
   return (target: any, propertyKey: string) => {
-    Reflect.defineMetadata(METADATA_AUTHENTICATION, { type: 'optional', roles }, target, propertyKey);
+    Reflect.defineMetadata(AUTH_META_KEY, { type: 'optional', roles }, target, propertyKey);
   };
 }
 
 export function AuthUser() {
-  return Inject((ctx: any) => ctx.state.authUser);
+  return Inject((ctx: Context) => ctx.state.authUser);
 }
 
-function createValidationMiddleware(validationOptions, type: 'body' | 'params' | 'query') {
-  return async (ctx: any, next: () => Promise<any>): Promise<any> => {
-    try {
-      let data = {};
+function createValidationMiddleware(validateOptions: ValidateOptions, type: 'body' | 'params' | 'query') {
+  return async (ctx: Context, next: () => Promise<any>): Promise<any> => {
+    const customOptions: CustomValidateOptions | undefined = (ctx as any).koaModsCustomValidationOptions;
+    const { rules: currentRules, messages: currentMessages } = validateOptions;
+    let data = {};
+    let customMessages: Messages = currentMessages ? { ...currentMessages } : {};
 
-      if (type === 'body') {
-        data = ctx.request.body;
-      } else if (type === 'query') {
-        data = ctx.query;
-      } else if (type === 'params') {
-        data = ctx.params;
-      } else {
-        throw new Error('Invalid Type');
+    if (type === 'body') {
+      data = ctx.request.body;
+    } else if (type === 'query') {
+      data = ctx.query;
+    } else {
+      data = ctx.params;
+    }
+
+    if (customOptions) {
+      const { rules, messages } = customOptions;
+      if (rules) {
+        for (const r of rules) {
+          if (typeof r === 'function') {
+            extend(r.name, r);
+          } else {
+            for (const key in r) {
+              if (r.hasOwnProperty(key)) {
+                extend(key, r[key]);
+              }
+            }
+          }
+        }
       }
-
-      await validateAll(data, validationOptions.rules, validationOptions.messages);
+      if (messages) {
+        customMessages = { ...messages, ...customMessages };
+      }
+    }
+    try {
+      await validateAll(data, currentRules, customMessages);
       return next();
     } catch (errors) {
       const e: any = new Error();

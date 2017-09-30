@@ -1,10 +1,11 @@
+import { Messages, ValidationMethod } from 'indicative';
 import * as Koa from 'koa';
 
 export interface KoaModsOptions {
   app: Koa;
   controllers: any[];
-  enableCors?: boolean;
   authorizationChecker?: AuthorizationCheckerFn;
+  customValidateOptions?: CustomValidateOptions;
 }
 
 export interface RouteDefinition {
@@ -17,7 +18,12 @@ export interface RouteDefinition {
 
 export interface ValidateOptions {
   rules: { [x: string]: string };
-  messages?: { [x: string]: string };
+  messages?: Messages;
+}
+
+export interface CustomValidateOptions {
+  rules?: (ValidationMethod | { [x: string]: ValidationMethod })[];
+  messages?: Messages;
 }
 
 export type AuthorizationCheckerFn = (
