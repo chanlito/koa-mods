@@ -25,6 +25,7 @@
   "homepage": "https://github.com/BruceHem/koa-mods",
   "devDependencies": {
     "@types/debug": "0.0.30",
+    "@types/glob": "^5.0.32",
     "@types/kcors": "^2.2.1",
     "@types/koa": "^2.0.39",
     "@types/koa-bodyparser": "^3.0.25",
@@ -46,6 +47,7 @@
   },
   "dependencies": {
     "debug": "^3.1.0",
+    "glob": "^7.1.2",
     "indicative": "^3.0.0",
     "reflect-metadata": "^0.1.10"
   }
