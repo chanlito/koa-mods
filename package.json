@@ -6,7 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "prepare": "tsc"
+    "prepare": "tsc",
+    "test": "NODE_ENV=test nyc mocha -r test/index.ts --opts test/mocha.opts"
   },
   "repository": {
     "type": "git",
@@ -24,14 +25,17 @@
   },
   "homepage": "https://github.com/BruceHem/koa-mods",
   "devDependencies": {
+    "@types/chai": "^4.0.4",
     "@types/debug": "0.0.30",
     "@types/glob": "^5.0.32",
     "@types/kcors": "^2.2.1",
     "@types/koa": "^2.0.39",
     "@types/koa-bodyparser": "^3.0.25",
     "@types/koa-router": "^7.0.23",
+    "@types/mocha": "^2.2.43",
     "@types/node": "^8.0.31",
     "@types/reflect-metadata": "0.0.5",
+    "chai": "^4.1.2",
     "jsonwebtoken": "^8.0.1",
     "kcors": "^2.2.1",
     "koa": "^2.3.0",
@@ -39,9 +43,13 @@
     "koa-logger": "^3.1.0",
     "koa-multer": "^1.0.2",
     "koa-router": "^7.2.1",
+    "mocha": "^3.5.3",
     "mysql2": "^1.4.2",
+    "nyc": "^11.2.1",
     "sequelize": "^4.11.7",
     "sequelize-typescript": "^0.5.0",
+    "source-map-support": "^0.4.18",
+    "ts-node": "^3.3.0",
     "tslint": "^5.7.0",
     "typescript": "^2.5.3"
   },
@@ -50,5 +58,22 @@
     "glob": "^7.1.2",
     "indicative": "^3.0.0",
     "reflect-metadata": "^0.1.10"
+  },
+  "nyc": {
+    "include": [
+      "src/**/*.ts"
+    ],
+    "extension": [
+      ".ts"
+    ],
+    "exclude": [
+      "**/*.d.ts",
+      "**/*.test.ts"
+    ],
+    "reporter": [
+      "html"
+    ],
+    "all": true,
+    "report-dir": "./coverage"
   }
 }

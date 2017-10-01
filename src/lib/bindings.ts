@@ -16,7 +16,7 @@ export function useKoaMods(options: KoaModsOptions): any {
 
   const router = new Router();
 
-  if (controllers.length === 1) {
+  if (controllers.length === 1 && typeof controllers[0] === 'string') {
     const files = new Glob(controllers[0], { sync: true });
     log('found the following controller files: \n', files.found);
     controllers = files.found.map(f => {
