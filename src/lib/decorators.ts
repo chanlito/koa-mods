@@ -240,7 +240,11 @@ export function Header(prop: string): ParameterDecorator {
 }
 
 export function Headers(): ParameterDecorator {
-  return Inject((ctx: Context) => _(ctx.request.headers).map((value, key) => ({ [_.camelCase(key)]: value })).value());
+  return Inject((ctx: Context) => {
+    const obj = {};
+    _(ctx.request.headers).each((v, k) => Object.assign(obj, { [_.camelCase(k)]: v }));
+    return obj;
+  });
 }
 
 export function Validate(options: ValidateOptions): ClassDecorator {
