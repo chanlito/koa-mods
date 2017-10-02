@@ -32,6 +32,7 @@
     "@types/koa": "^2.0.39",
     "@types/koa-bodyparser": "^3.0.25",
     "@types/koa-router": "^7.0.23",
+    "@types/lodash": "^4.14.76",
     "@types/mocha": "^2.2.43",
     "@types/node": "^8.0.31",
     "@types/reflect-metadata": "0.0.5",
@@ -57,6 +58,7 @@
     "debug": "^3.1.0",
     "glob": "^7.1.2",
     "indicative": "^3.0.0",
+    "lodash": "^4.17.4",
     "reflect-metadata": "^0.1.10"
   },
   "nyc": {

@@ -38,8 +38,10 @@ export class TodosController {
     @AuthUser() authUser: User,
     @Ctx() ctx: Context,
     @QueryParam('limit') limit: number = 10,
-    @QueryParam('offset') offset: number = 0
+    @QueryParam('offset') offset: number = 0,
+    @QueryParam('isComplete') isComplete: boolean
   ) {
+    console.log('is', isComplete, typeof isComplete);
     const { rows, count } = await Todo.findAndCount<Todo>({
       attributes: { exclude: [ 'userId' ] },
       where: { userId: authUser.id },

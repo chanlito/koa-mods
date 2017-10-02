@@ -28,7 +28,7 @@ useKoaMods({
 
 (async () => {
   await sequelize.sync({ force: false });
-  app.listen(6969, () => console.log('🎉🎉🎉 Server running on port 6969 🎉🎉🎉'));
+  app.listen(6969, () => console.log('🎉🎉🎉   Server running on port 6969  🎉🎉🎉'));
 })().catch(e => {
   console.error(e);
   process.exit(1);

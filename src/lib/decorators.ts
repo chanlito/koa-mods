@@ -1,5 +1,6 @@
 import { extend, Messages, validateAll } from 'indicative';
 import { Context } from 'koa';
+import * as _ from 'lodash';
 
 import { RouteDefinition, ValidateOptions } from '../';
 import {
@@ -162,6 +163,8 @@ export function QueryParam(prop: string) {
     const fn = (ctx: Context) => {
       if (paramType === 'Number') {
         return ctx.query[prop] ? +ctx.query[prop] : ctx.query[prop];
+      } else if (paramType === 'Boolean') {
+        return ctx.query[prop] ? ctx.query[prop] === 'true' : ctx.query[prop];
       } else {
         return ctx.query[prop];
       }
@@ -201,6 +204,8 @@ export function Param(prop: string): ParameterDecorator {
     const fn = (ctx: Context) => {
       if (paramType === 'Number') {
         return ctx.params[prop] ? +ctx.params[prop] : ctx.params[prop];
+      } else if (paramType === 'Boolean') {
+        return ctx.params[prop] ? ctx.params[prop] === 'true' : ctx.params[prop];
       } else {
         return ctx.params[prop];
       }
@@ -228,6 +233,14 @@ export function Params(): ParameterDecorator {
     meta.push({ index, name, fn: (ctx: Context) => ctx.params });
     Reflect.defineMetadata(`${PARAMS_META_KEY}_${name}`, meta, target);
   };
+}
+
+export function Header(prop: string): ParameterDecorator {
+  return Inject((ctx: Context) => ctx.request.headers[prop]);
+}
+
+export function Headers(): ParameterDecorator {
+  return Inject((ctx: Context) => _(ctx.request.headers).map((value, key) => ({ [_.camelCase(key)]: value })).value());
 }
 
 export function Validate(options: ValidateOptions): ClassDecorator {

@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { sign } from 'jsonwebtoken';
 
-import { Body, Controller, Post } from '../../../../dist';
+import { Body, Controller, Header, Headers, Post } from '../../../../dist';
 import { BadRequestError } from '../../common';
 import { default as User, UserAttributesOpt } from '../../models/user.model';
 import { LoginDto, RegisterDto } from './auth.dto';
@@ -9,7 +9,13 @@ import { LoginDto, RegisterDto } from './auth.dto';
 @Controller('auth')
 export class AuthController {
   @Post('register')
-  async register(@Body() { username, password }: RegisterDto) {
+  async register(
+    @Body() { username, password }: RegisterDto,
+    @Headers() headers: any,
+    @Header('user-agent') userAgent: string
+  ) {
+    console.log('headers', headers);
+    console.log('userAgent', userAgent);
     const user = await User.create<User, UserAttributesOpt>({
       username,
       password
