@@ -143,10 +143,7 @@ export function Body(): ParameterDecorator {
 }
 
 export function File() {
-  return Inject((ctx: any) => {
-    if (ctx.request.files.length) return ctx.request.files[0];
-    return ctx.request.files;
-  });
+  return Inject((ctx: any) => ctx.req.file);
 }
 
 export function Files() {
